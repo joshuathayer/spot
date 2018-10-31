@@ -17,7 +17,6 @@ Any class with an `act` method as shown below can be an actor. Here's a simple a
             self.count = 0
 
         def act(self, msg, tell, create):
-
             self.count += 1
             tell('sum', self.count)
 
