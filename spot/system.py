@@ -37,6 +37,9 @@ class Actor(QRunnable):
         self.done(self.name)
 
 class ActorSystem(QObject):
+
+    actor_event = pyqtSignal(object)
+
     def __init__(self, app):
         super().__init__()
 
@@ -48,12 +51,13 @@ class ActorSystem(QObject):
 
         self.running = set()
 
+        self.actor_event.connect(self.event)
+
     def event(self, e):
         self.tick()
         return False
 
     def create_actor(self, actor_class, actor_name=None):
-
         actor = Actor(actor_class,
                       lambda t, m: self.tell(t, m),
                       lambda a: self.create_actor(a),
@@ -66,7 +70,7 @@ class ActorSystem(QObject):
             logger.info("Replacing existing actor at {}".format(name))
 
         self.actors[name] = actor
-
+        self.actor_event.emit(None)
         return actor
 
     def tell(self, target, message):
@@ -78,13 +82,13 @@ class ActorSystem(QObject):
         else:
             logger.info("Was asked to add to an actor which does not exist")
 
-        self.app.postEvent(self, QEvent(1000))
+        self.actor_event.emit(None)
 
     def actor_done(self, name):
         self.running.remove(name)
+        self.actor_event.emit(None)
 
     def tick(self):
-
         if self.tickmutex.tryLock():
             readys = list(filter(lambda v: True
                                  if len(v.inbox) > 0
